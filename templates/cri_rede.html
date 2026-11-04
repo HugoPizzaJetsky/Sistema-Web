@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de RDB</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        .painel-editor {
+            padding: 30px 60px 0 60px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .barra-topo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #dadce0;
+        }
+
+        .lados-esquerdos {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .botoes-acoes {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-acao {
+            background-color: #f1f3f4;
+            color: #3c4043;
+            border: 1px solid #dadce0;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-acao:hover {
+            background-color: #e8eaed;
+        }
+
+        .btn-acao.ativo {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border-color: #1a73e8;
+        }
+
+        .btn-redondo-mais {
+            width: 34px;
+            height: 34px;
+            background-color: #1a73e8;
+            color: white;
+            font-size: 20px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .btn-excluir:hover,
+        .btn-excluir.ativo {
+            background-color: #fce8e6;
+            color: #c5221f;
+            border-color: #c5221f;
+        }
+
+        .input-titulo-rede {
+            font-size: 22px;
+            color: #3e3d3d;
+            font-weight: 500;
+            border: 1px solid transparent;
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 300px;
+        }
+
+        .input-titulo-rede:hover,
+        .input-titulo-rede:focus {
+            border-color: #dadce0;
+            outline: none;
+        }
+
+        .btn-voltar {
+            text-decoration: none;
+            color: #5f6368;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #dadce0;
+            background-color: #f1f3f4;
+        }
+
+        .container-colunas {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .svg-ligacoes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: visible;
+        }
+
+        .grupo-ligacao .linha-hit {
+            pointer-events: none;
+        }
+
+        .container-colunas.modo-exclusao .grupo-ligacao {
+            cursor: pointer;
+        }
+
+        .container-colunas.modo-exclusao .grupo-ligacao .linha-hit {
+            pointer-events: stroke;
+        }
+
+        .container-colunas.modo-exclusao .grupo-ligacao:hover .linha-visivel {
+            stroke: #d93025;
+            stroke-width: 3;
+            marker-end: url(#seta-direita-excluir);
+        }
+
+        .coluna-dominio {
+            flex: 1;
+            min-height: 500px;
+            padding: 25px 20px 0 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 2px solid #dadce0;
+        }
+
+        .coluna-dominio:last-child {
+            border-right: none;
+        }
+
+        .titulo-coluna {
+            font-size: 13px;
+            color: #5f6368;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .lista-nos-coluna {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .no-rdb {
+            width: 100%;
+            max-width: 210px;
+            box-sizing: border-box;
+            background-color: #f8f9fa;
+            border: 1.5px solid #5f6368;
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: #202124;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            word-wrap: break-word;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        .no-rdb:hover {
+            border-color: #1a73e8;
+            background-color: #e8f0fe;
+        }
+
+        .container-colunas.modo-exclusao .no-rdb:hover {
+            border-color: #d93025;
+            background-color: #fce8e6;
+            color: #c5221f;
+        }
+
+        .no-rdb.selecionado-origem {
+            border-color: #1a73e8;
+            background-color: #e8f0fe;
+        }
+
+        .modal-fundo {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-caixa {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .modal-cabecalho {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-fechar {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-grupo-campo {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .modal-grupo-campo label {
+            font-size: 13px;
+            color: #5f6368;
+        }
+
+        .modal-grupo-campo input,
+        .modal-grupo-campo select,
+        .modal-grupo-campo textarea {
+            padding: 8px 10px;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .modal-botoes {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-cancelar {
+            background-color: #f1f3f4;
+            border: 1px solid #dadce0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-salvar {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-confirmar-excluir {
+            background-color: #d93025;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="painel-editor">
+        <div class="barra-topo">
+            <div class="lados-esquerdos">
+                <a class="btn-voltar" href="/app">Voltar</a>
+                <input type="text" id="inputNomeRede" class="input-titulo-rede" value="{{ rede.nome }}" onblur="salvarNomeRede()">
+            </div>
+
+            <div class="botoes-acoes">
+                <button class="btn-redondo-mais" onclick="abrirModalNovoNo()">+</button>
+                <button id="btnConectar" class="btn-acao" onclick="alternarModoConexao()">Conectar</button>
+                <button id="btnExcluir" class="btn-acao btn-excluir" onclick="alternarModoExclusao()">Excluir</button>
+                <input type="file" id="inputImportar" accept=".json" style="display: none;" onchange="importarRede(event)">
+                <button class="btn-acao" onclick="document.getElementById('inputImportar').click()">Importar</button>
+                <button class="btn-acao" onclick="exportarRede()">Exportar</button>
+            </div>
+        </div>
+
+        <div class="container-colunas" id="containerColunas">
+            <svg id="svgLigacoes" class="svg-ligacoes">
+                <defs>
+                    <marker id="seta-direita" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#5f6368" />
+                    </marker>
+                    <marker id="seta-direita-excluir" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#d93025" />
+                    </marker>
+                </defs>
+            </svg>
+
+            <div class="coluna-dominio" data-camada="ti">
+                <span class="titulo-coluna">Facilitadores de TI</span>
+                <div class="lista-nos-coluna">
+                    {% for no in nos if no.camada == 'ti' %}
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="coluna-dominio" data-camada="mudanca">
+                <span class="titulo-coluna">Facilitadores de Mudanças</span>
+                <div class="lista-nos-coluna">
+                    {% for no in nos if no.camada == 'mudanca' %}
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="coluna-dominio" data-camada="organizacional">
+                <span class="titulo-coluna">Mudanças Organizacionais</span>
+                <div class="lista-nos-coluna">
+                    {% for no in nos if no.camada == 'organizacional' %}
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="coluna-dominio" data-camada="beneficio">
+                <span class="titulo-coluna">Benefícios</span>
+                <div class="lista-nos-coluna">
+                    {% for no in nos if no.camada == 'beneficio' %}
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="coluna-dominio" data-camada="objetivo">
+                <span class="titulo-coluna">Objetivos de Investimento</span>
+                <div class="lista-nos-coluna">
+                    {% for no in nos if no.camada == 'objetivo' %}
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para criar novo nó -->
+    <div id="modalNovoNo" class="modal-fundo">
+        <div class="modal-caixa">
+            <div class="modal-cabecalho">
+                <span>Adicionar Novo Nó</span>
+                <button class="modal-fechar" onclick="fecharModais()">&times;</button>
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Nome do Elemento:</label>
+                <input type="text" id="nomeNo" placeholder="Ex: Sistema de Gestão...">
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Domínio (Camada):</label>
+                <select id="camadaNo">
+                    <option value="ti">Facilitadores de TI</option>
+                    <option value="mudanca">Facilitadores de Mudanças</option>
+                    <option value="organizacional">Mudanças Organizacionais</option>
+                    <option value="beneficio">Benefícios</option>
+                    <option value="objetivo">Objetivos de Investimento</option>
+                </select>
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModais()">Cancelar</button>
+                <button class="btn-salvar" onclick="salvarNovoNo()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar exclusão -->
+    <div id="modalConfirmarExclusao" class="modal-fundo">
+        <div class="modal-caixa">
+            <div class="modal-cabecalho">
+                <span>Confirmar Exclusão</span>
+                <button class="modal-fechar" onclick="fecharModais()">&times;</button>
+            </div>
+            <p>Tem certeza que deseja excluir?</p>
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModais()">Cancelar</button>
+                <button class="btn-confirmar-excluir" onclick="confirmarExclusao()">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar detalhes do nó -->
+    <div id="modalDetalhesNo" class="modal-fundo">
+        <div class="modal-caixa">
+            <div class="modal-cabecalho">
+                <span>Detalhes do Nó</span>
+                <button class="modal-fechar" onclick="fecharModais()">&times;</button>
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Nome do Elemento:</label>
+                <input type="text" id="detalheNome">
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Descrição:</label>
+                <textarea id="detalheDescricao" rows="2"></textarea>
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Status:</label>
+                <input type="text" id="detalheStatus">
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Anotações:</label>
+                <textarea id="detalheAnotacoes" rows="2"></textarea>
+            </div>
+
+            <div class="modal-grupo-campo">
+                <label>Especificidades da Camada:</label>
+                <textarea id="detalheEspecificidades" rows="2"></textarea>
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModais()">Cancelar</button>
+                <button class="btn-salvar" onclick="salvarDetalhesNo()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const redeId = {{ rede.id }};
+
+        const ligacoes = [
+            {% for lig in ligacoes %}
+            { id: {{ lig.id }}, no_origem_id: {{ lig.no_origem_id }}, no_destino_id: {{ lig.no_destino_id }} },
+            {% endfor %}
+        ];
+
+        const ligacoesPermitidas = {
+            ti: ['ti', 'mudanca', 'organizacional'],
+            mudanca: ['mudanca', 'organizacional'],
+            organizacional: ['organizacional', 'beneficio'],
+            beneficio: ['beneficio', 'objetivo'],
+            objetivo: ['objetivo']
+        };
+
+        let modoConexao = false;
+        let modoExclusao = false;
+        let noOrigem = null;
+        let noAtualId = null;
+        let itemParaExcluir = null;
+
+        function abrirModalNovoNo() {
+            document.getElementById('nomeNo').value = '';
+            document.getElementById('modalNovoNo').style.display = 'flex';
+        }
+
+        function fecharModais() {
+            document.getElementById('modalNovoNo').style.display = 'none';
+            document.getElementById('modalConfirmarExclusao').style.display = 'none';
+            document.getElementById('modalDetalhesNo').style.display = 'none';
+            itemParaExcluir = null;
+        }
+
+        function alternarModoConexao() {
+            modoConexao = !modoConexao;
+            modoExclusao = false;
+            if (noOrigem) {
+                noOrigem.classList.remove('selecionado-origem');
+                noOrigem = null;
+            }
+            atualizarBotoesModo();
+        }
+
+        function alternarModoExclusao() {
+            modoExclusao = !modoExclusao;
+            modoConexao = false;
+            if (noOrigem) {
+                noOrigem.classList.remove('selecionado-origem');
+                noOrigem = null;
+            }
+            atualizarBotoesModo();
+        }
+
+        function atualizarBotoesModo() {
+            document.getElementById('btnConectar').classList.toggle('ativo', modoConexao);
+            document.getElementById('btnExcluir').classList.toggle('ativo', modoExclusao);
+            document.getElementById('containerColunas').classList.toggle('modo-exclusao', modoExclusao);
+        }
+
+        async function salvarNomeRede() {
+            const novoNome = document.getElementById('inputNomeRede').value.trim() || 'Nova Rede';
+            await fetch('/redes/atualizar/' + redeId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: novoNome })
+            });
+        }
+
+        async function salvarNovoNo() {
+            const nome = document.getElementById('nomeNo').value.trim();
+            const camada = document.getElementById('camadaNo').value;
+
+            if (!nome) {
+                alert('Digite o nome do elemento.');
+                return;
+            }
+
+            const resposta = await fetch('/redes/Criar_no', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome, rede_id: redeId, camada: camada })
+            });
+
+            if (resposta.ok) {
+                window.location.reload();
+            }
+        }
+
+        async function clicarNo(elemento) {
+            const idClicado = parseInt(elemento.getAttribute('data-no-id'));
+
+            if (modoExclusao) {
+                itemParaExcluir = { tipo: 'no', id: idClicado };
+                document.getElementById('modalConfirmarExclusao').style.display = 'flex';
+                return;
+            }
+
+            if (!modoConexao) {
+                noAtualId = idClicado;
+                document.getElementById('detalheNome').value = elemento.textContent;
+                document.getElementById('detalheDescricao').value = elemento.getAttribute('data-descricao');
+                document.getElementById('detalheStatus').value = elemento.getAttribute('data-status');
+                document.getElementById('detalheAnotacoes').value = elemento.getAttribute('data-anotacoes');
+                document.getElementById('detalheEspecificidades').value = elemento.getAttribute('data-especificidades');
+                document.getElementById('modalDetalhesNo').style.display = 'flex';
+                return;
+            }
+
+            if (!noOrigem) {
+                noOrigem = elemento;
+                noOrigem.classList.add('selecionado-origem');
+                return;
+            }
+
+            if (noOrigem === elemento) {
+                noOrigem.classList.remove('selecionado-origem');
+                noOrigem = null;
+                return;
+            }
+
+            const camadaOrigem = noOrigem.getAttribute('data-camada');
+            const camadaDestino = elemento.getAttribute('data-camada');
+
+            if (!ligacoesPermitidas[camadaOrigem].includes(camadaDestino)) {
+                alert('Essa ligação não é permitida pelas regras da RDB.');
+                noOrigem.classList.remove('selecionado-origem');
+                noOrigem = null;
+                return;
+            }
+
+            const idOrigem = parseInt(noOrigem.getAttribute('data-no-id'));
+            const resposta = await fetch('/redes/Criar_ligacao', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ no_origem_id: idOrigem, no_destino_id: idClicado })
+            });
+
+            if (resposta.ok) {
+                window.location.reload();
+            }
+        }
+
+        function clicarLigacao(idLigacao) {
+            if (modoExclusao) {
+                itemParaExcluir = { tipo: 'ligacao', id: idLigacao };
+                document.getElementById('modalConfirmarExclusao').style.display = 'flex';
+            }
+        }
+
+        async function confirmarExclusao() {
+            if (!itemParaExcluir) return;
+
+            let url = '/redes/excluir_no/' + itemParaExcluir.id;
+            if (itemParaExcluir.tipo === 'ligacao') {
+                url = '/redes/excluir_ligacao/' + itemParaExcluir.id;
+            }
+
+            const resposta = await fetch(url, { method: 'DELETE' });
+            if (resposta.ok) {
+                window.location.reload();
+            }
+        }
+
+        async function salvarDetalhesNo() {
+            const nome = document.getElementById('detalheNome').value.trim();
+            if (!nome) {
+                alert('O nome não pode ficar vazio.');
+                return;
+            }
+
+            const dados = {
+                nome: nome,
+                descricao: document.getElementById('detalheDescricao').value,
+                status: document.getElementById('detalheStatus').value,
+                anotacoes: document.getElementById('detalheAnotacoes').value,
+                especificidades_camada: document.getElementById('detalheEspecificidades').value
+            };
+
+            const resposta = await fetch('/redes/atualizar_no/' + noAtualId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            if (resposta.ok) {
+                window.location.reload();
+            }
+        }
+
+        async function exportarRede() {
+            await salvarNomeRede();
+            const resposta = await fetch('/redes/exportar/' + redeId);
+            const dados = await resposta.json();
+
+            const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = dados.nome + '.json';
+            link.click();
+        }
+
+        function importarRede(evento) {
+            const arquivo = evento.target.files[0];
+            if (!arquivo) return;
+
+            const leitor = new FileReader();
+            leitor.onload = async function(e) {
+                const dados = JSON.parse(e.target.result);
+                const resposta = await fetch('/redes/importar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                if (resposta.ok) {
+                    const resultado = await resposta.json();
+                    window.location.href = '/editor/' + resultado.id;
+                }
+            };
+            leitor.readAsText(arquivo);
+        }
+
+        function desenharLigacoes() {
+            const svg = document.getElementById('svgLigacoes');
+            svg.querySelectorAll('.grupo-ligacao').forEach(el => el.remove());
+
+            const rectContainer = document.getElementById('containerColunas').getBoundingClientRect();
+
+            ligacoes.forEach(lig => {
+                const elOrigem = document.querySelector(`.no-rdb[data-no-id="${lig.no_origem_id}"]`);
+                const elDestino = document.querySelector(`.no-rdb[data-no-id="${lig.no_destino_id}"]`);
+                if (!elOrigem || !elDestino) return;
+
+                const rectOrigem = elOrigem.getBoundingClientRect();
+                const rectDestino = elDestino.getBoundingClientRect();
+
+                const camadaOrigem = elOrigem.getAttribute('data-camada');
+                const camadaDestino = elDestino.getAttribute('data-camada');
+
+                let x1, y1, x2, y2;
+
+                if (camadaOrigem === camadaDestino) {
+                    x1 = rectOrigem.left + rectOrigem.width / 2 - rectContainer.left;
+                    x2 = rectDestino.left + rectDestino.width / 2 - rectContainer.left;
+                    if (rectOrigem.top < rectDestino.top) {
+                        y1 = rectOrigem.bottom - rectContainer.top;
+                        y2 = rectDestino.top - rectContainer.top;
+                    } else {
+                        y1 = rectOrigem.top - rectContainer.top;
+                        y2 = rectDestino.bottom - rectContainer.top;
+                    }
+                } else {
+                    x1 = rectOrigem.right - rectContainer.left;
+                    y1 = rectOrigem.top + rectOrigem.height / 2 - rectContainer.top;
+                    x2 = rectDestino.left - rectContainer.left;
+                    y2 = rectDestino.top + rectDestino.height / 2 - rectContainer.top;
+                }
+
+                const grupo = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                grupo.setAttribute('class', 'grupo-ligacao');
+                grupo.onclick = function() {
+                    clicarLigacao(lig.id);
+                };
+
+                const linhaHit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                linhaHit.setAttribute('class', 'linha-hit');
+                linhaHit.setAttribute('x1', x1);
+                linhaHit.setAttribute('y1', y1);
+                linhaHit.setAttribute('x2', x2);
+                linhaHit.setAttribute('y2', y2);
+                linhaHit.setAttribute('stroke', 'transparent');
+                linhaHit.setAttribute('stroke-width', '14');
+
+                const linhaVisivel = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                linhaVisivel.setAttribute('class', 'linha-visivel');
+                linhaVisivel.setAttribute('x1', x1);
+                linhaVisivel.setAttribute('y1', y1);
+                linhaVisivel.setAttribute('x2', x2);
+                linhaVisivel.setAttribute('y2', y2);
+                linhaVisivel.setAttribute('stroke', '#5f6368');
+                linhaVisivel.setAttribute('stroke-width', '2');
+                linhaVisivel.setAttribute('marker-end', 'url(#seta-direita)');
+
+                grupo.appendChild(linhaHit);
+                grupo.appendChild(linhaVisivel);
+                svg.appendChild(grupo);
+            });
+        }
+
+        window.onload = desenharLigacoes;
+        window.onresize = desenharLigacoes;
+    </script>
+
+</body>
+</html>

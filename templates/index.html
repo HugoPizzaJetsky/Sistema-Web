@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel RDB</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        .faixa-horizontal {
+            width: 100%;
+            background-color: #dbdbdb;
+            margin-top: 40px;
+            padding: 30px 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+
+        .texto-faixa {
+            color: #3e3d3d;
+            font-size: 22px;
+            font-weight: 500;
+        }
+
+        .cartao-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-cartao-vertical {
+            width: 90px;
+            height: 130px;
+            background-color: #ffffff;
+            border: 2px solid #5f6368;
+            border-radius: 8px;
+            color: #5f6368;
+            font-size: 48px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-cartao-vertical:hover {
+            border-color: #8ab4f8;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .legenda-cartao {
+            color: #3e3d3d;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .secao-minhas-redes {
+            padding: 40px 60px;
+        }
+
+        .titulo-minhas-redes {
+            color: #202124;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .lista-cartoes-salvos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .cartao-rede-salva {
+            width: 140px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+
+        .mini-thumbnail {
+            width: 140px;
+            height: 180px;
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #bdc1c6;
+            font-weight: 600;
+            font-size: 18px;
+            text-decoration: none;
+        }
+
+        .mini-thumbnail:hover {
+            border-color: #1a73e8;
+        }
+
+        .rodape-cartao {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .nome-rede-salva {
+            color: #202124;
+            font-size: 14px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-decoration: none;
+            flex: 1;
+        }
+
+        .btn-tres-pontos {
+            background: transparent;
+            border: none;
+            color: #5f6368;
+            font-size: 18px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .btn-tres-pontos:hover {
+            background-color: #e8eaed;
+        }
+
+        .menu-opcoes {
+            display: none;
+            position: absolute;
+            top: 32px;
+            right: 0;
+            background-color: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            padding: 4px 0;
+            min-width: 140px;
+            z-index: 100;
+            flex-direction: column;
+        }
+
+        .menu-opcoes.ativo {
+            display: flex;
+        }
+
+        .item-menu-opcao {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            padding: 8px 14px;
+            font-size: 13px;
+            color: #3c4043;
+            cursor: pointer;
+        }
+
+        .item-menu-opcao:hover {
+            background-color: #f1f3f4;
+        }
+
+        .item-menu-opcao.excluir {
+            color: #d93025;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="faixa-horizontal">
+        <span class="texto-faixa">Iniciar nova rede</span>
+
+        <form action="/redes/Criar_e_abrir" method="POST" class="cartao-form">
+            <input type="hidden" name="nome" value="Nova Rede">
+            <button type="submit" class="btn-cartao-vertical">+</button>
+            <span class="legenda-cartao">Documento em branco</span>
+        </form>
+    </div>
+
+    <div class="secao-minhas-redes">
+        <h2 class="titulo-minhas-redes">Minhas redes</h2>
+
+        <div class="lista-cartoes-salvos">
+            {% for rede in redes %}
+            <div class="cartao-rede-salva">
+                <a href="/editor/{{ rede.id }}" class="mini-thumbnail">RDB</a>
+                <div class="rodape-cartao">
+                    <a href="/editor/{{ rede.id }}" class="nome-rede-salva">{{ rede.nome }}</a>
+                    <button type="button" class="btn-tres-pontos" onclick="alternarMenu(event, {{ rede.id }})">&#8942;</button>
+
+                    <div id="menu-{{ rede.id }}" class="menu-opcoes">
+                        <button type="button" class="item-menu-opcao" onclick="duplicarRede({{ rede.id }})">Duplicar rede</button>
+                        <button type="button" class="item-menu-opcao excluir" onclick="excluirRede({{ rede.id }})">Excluir rede</button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p style="color: #5f6368; font-size: 14px;">Nenhuma rede criada ainda.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function alternarMenu(evento, redeId) {
+            evento.stopPropagation();
+            const menuAtual = document.getElementById('menu-' + redeId);
+            const jaAberto = menuAtual.classList.contains('ativo');
+
+            document.querySelectorAll('.menu-opcoes').forEach(menu => {
+                menu.classList.remove('ativo');
+            });
+
+            if (!jaAberto) {
+                menuAtual.classList.add('ativo');
+            }
+        }
+
+        window.onclick = function() {
+            document.querySelectorAll('.menu-opcoes').forEach(menu => {
+                menu.classList.remove('ativo');
+            });
+        };
+
+        async function duplicarRede(redeId) {
+            const resposta = await fetch('/redes/duplicar/' + redeId, { method: 'POST' });
+            if (resposta.ok) {
+                window.location.reload();
+            }
+        }
+
+        async function excluirRede(redeId) {
+            const resposta = await fetch('/redes/excluir/' + redeId, { method: 'DELETE' });
+            if (resposta.ok) {
+                window.location.reload();
+            }
+        }
+    </script>
+
+</body>
+</html>
