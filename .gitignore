@@ -19,3 +19,12 @@ __pycache__/
 
 # Variáveis de ambiente
 .env
+
+# Anotações
+*.md
+
+# Arquivos gerados pelo PyInstaller (.exe) e Inno Setup
+build/
+dist/
+instalador/
+*.spec

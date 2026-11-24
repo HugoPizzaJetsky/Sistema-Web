@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de RDB</title>
+    <title>RDB Digital - Editor</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -332,7 +332,7 @@
                 <span class="titulo-coluna">Facilitadores de TI</span>
                 <div class="lista-nos-coluna">
                     {% for no in nos if no.camada == 'ti' %}
-                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-metrica="{{ no.metrica or '' }}" data-dono="{{ no.dono or '' }}" data-prazo="{{ no.prazo or '' }}">{{ no.nome }}</div>
                     {% endfor %}
                 </div>
             </div>
@@ -341,7 +341,7 @@
                 <span class="titulo-coluna">Facilitadores de Mudanças</span>
                 <div class="lista-nos-coluna">
                     {% for no in nos if no.camada == 'mudanca' %}
-                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-metrica="{{ no.metrica or '' }}" data-dono="{{ no.dono or '' }}" data-prazo="{{ no.prazo or '' }}">{{ no.nome }}</div>
                     {% endfor %}
                 </div>
             </div>
@@ -350,7 +350,7 @@
                 <span class="titulo-coluna">Mudanças Organizacionais</span>
                 <div class="lista-nos-coluna">
                     {% for no in nos if no.camada == 'organizacional' %}
-                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-metrica="{{ no.metrica or '' }}" data-dono="{{ no.dono or '' }}" data-prazo="{{ no.prazo or '' }}">{{ no.nome }}</div>
                     {% endfor %}
                 </div>
             </div>
@@ -359,7 +359,7 @@
                 <span class="titulo-coluna">Benefícios</span>
                 <div class="lista-nos-coluna">
                     {% for no in nos if no.camada == 'beneficio' %}
-                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-metrica="{{ no.metrica or '' }}" data-dono="{{ no.dono or '' }}" data-prazo="{{ no.prazo or '' }}">{{ no.nome }}</div>
                     {% endfor %}
                 </div>
             </div>
@@ -368,14 +368,13 @@
                 <span class="titulo-coluna">Objetivos de Investimento</span>
                 <div class="lista-nos-coluna">
                     {% for no in nos if no.camada == 'objetivo' %}
-                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-anotacoes="{{ no.anotacoes or '' }}" data-especificidades="{{ no.especificidades_camada or '' }}">{{ no.nome }}</div>
+                    <div class="no-rdb" onclick="clicarNo(this)" data-no-id="{{ no.id }}" data-camada="{{ no.camada }}" data-descricao="{{ no.descricao or '' }}" data-status="{{ no.status or '' }}" data-metrica="{{ no.metrica or '' }}" data-dono="{{ no.dono or '' }}" data-prazo="{{ no.prazo or '' }}">{{ no.nome }}</div>
                     {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para criar novo nó -->
     <div id="modalNovoNo" class="modal-fundo">
         <div class="modal-caixa">
             <div class="modal-cabecalho">
@@ -406,7 +405,6 @@
         </div>
     </div>
 
-    <!-- Modal para confirmar exclusão -->
     <div id="modalConfirmarExclusao" class="modal-fundo">
         <div class="modal-caixa">
             <div class="modal-cabecalho">
@@ -421,7 +419,6 @@
         </div>
     </div>
 
-    <!-- Modal para editar detalhes do nó -->
     <div id="modalDetalhesNo" class="modal-fundo">
         <div class="modal-caixa">
             <div class="modal-cabecalho">
@@ -444,14 +441,19 @@
                 <input type="text" id="detalheStatus">
             </div>
 
-            <div class="modal-grupo-campo">
-                <label>Anotações:</label>
-                <textarea id="detalheAnotacoes" rows="2"></textarea>
+            <div class="modal-grupo-campo" id="campoMetrica" style="display: none;">
+                <label>Métrica:</label>
+                <input type="text" id="detalheMetrica">
             </div>
 
-            <div class="modal-grupo-campo">
-                <label>Especificidades da Camada:</label>
-                <textarea id="detalheEspecificidades" rows="2"></textarea>
+            <div class="modal-grupo-campo" id="campoDono" style="display: none;">
+                <label>Dono:</label>
+                <input type="text" id="detalheDono">
+            </div>
+
+            <div class="modal-grupo-campo" id="campoPrazo" style="display: none;">
+                <label>Prazo:</label>
+                <input type="text" id="detalhePrazo">
             </div>
 
             <div class="modal-botoes">
@@ -482,6 +484,7 @@
         let modoExclusao = false;
         let noOrigem = null;
         let noAtualId = null;
+        let noAtualCamada = null;
         let itemParaExcluir = null;
 
         function abrirModalNovoNo() {
@@ -551,6 +554,15 @@
             }
         }
 
+        function configurarCamposPorCamada(camada) {
+            const ehBeneficio = camada === 'beneficio';
+            const ehMudanca = camada === 'mudanca' || camada === 'organizacional';
+
+            document.getElementById('campoMetrica').style.display = ehBeneficio ? 'flex' : 'none';
+            document.getElementById('campoDono').style.display = (ehBeneficio || ehMudanca) ? 'flex' : 'none';
+            document.getElementById('campoPrazo').style.display = ehMudanca ? 'flex' : 'none';
+        }
+
         async function clicarNo(elemento) {
             const idClicado = parseInt(elemento.getAttribute('data-no-id'));
 
@@ -562,11 +574,14 @@
 
             if (!modoConexao) {
                 noAtualId = idClicado;
+                noAtualCamada = elemento.getAttribute('data-camada');
                 document.getElementById('detalheNome').value = elemento.textContent;
                 document.getElementById('detalheDescricao').value = elemento.getAttribute('data-descricao');
                 document.getElementById('detalheStatus').value = elemento.getAttribute('data-status');
-                document.getElementById('detalheAnotacoes').value = elemento.getAttribute('data-anotacoes');
-                document.getElementById('detalheEspecificidades').value = elemento.getAttribute('data-especificidades');
+                document.getElementById('detalheMetrica').value = elemento.getAttribute('data-metrica');
+                document.getElementById('detalheDono').value = elemento.getAttribute('data-dono');
+                document.getElementById('detalhePrazo').value = elemento.getAttribute('data-prazo');
+                configurarCamposPorCamada(noAtualCamada);
                 document.getElementById('modalDetalhesNo').style.display = 'flex';
                 return;
             }
@@ -633,12 +648,16 @@
                 return;
             }
 
+            const ehBeneficio = noAtualCamada === 'beneficio';
+            const ehMudanca = noAtualCamada === 'mudanca' || noAtualCamada === 'organizacional';
+
             const dados = {
                 nome: nome,
                 descricao: document.getElementById('detalheDescricao').value,
                 status: document.getElementById('detalheStatus').value,
-                anotacoes: document.getElementById('detalheAnotacoes').value,
-                especificidades_camada: document.getElementById('detalheEspecificidades').value
+                metrica: ehBeneficio ? document.getElementById('detalheMetrica').value : '',
+                dono: (ehBeneficio || ehMudanca) ? document.getElementById('detalheDono').value : '',
+                prazo: ehMudanca ? document.getElementById('detalhePrazo').value : ''
             };
 
             const resposta = await fetch('/redes/atualizar_no/' + noAtualId, {

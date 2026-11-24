@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from dependencias import pegar_sessao
-from modelos import Rede, No, Ligacao
-from schemas import RedeSchema, NoSchema, DetalhesNoSchema, LigacaoSchema, ImportarRedeSchema
+from app.dependencias import pegar_sessao
+from app.modelos import Rede, No, Ligacao
+from app.schemas import RedeSchema, NoSchema, DetalhesNoSchema, LigacaoSchema, ImportarRedeSchema
 
 rotas = APIRouter(prefix='/redes', tags=['rede'])
 
@@ -15,12 +15,24 @@ LIGACOES_PERMITIDAS = {
     "objetivo": ["objetivo"]
 }
 
+CAMADAS_MUDANCA = ("mudanca", "organizacional")
+
+
+def filtrar_metadados_camada(camada: str, metrica: str = "", dono: str = "", prazo: str = ""):
+    if camada == "beneficio":
+        return metrica or "", dono or "", ""
+    if camada in CAMADAS_MUDANCA:
+        return "", dono or "", prazo or ""
+    return "", "", ""
+
+
 @rotas.post('/Criar_e_abrir')
 def criar_e_abrir(nome: str = Form(...), session: Session = Depends(pegar_sessao)):
     nova_rede = Rede(nome=nome)
     session.add(nova_rede)
     session.commit()
     return RedirectResponse(url=f"/editor/{nova_rede.id}", status_code=303)
+
 
 @rotas.put('/atualizar/{rede_id}')
 def atualizar_rede(rede_id: int, dados: RedeSchema, session: Session = Depends(pegar_sessao)):
@@ -29,6 +41,7 @@ def atualizar_rede(rede_id: int, dados: RedeSchema, session: Session = Depends(p
         rede.nome = dados.nome
         session.commit()
     return {"mensagem": "Nome atualizado"}
+
 
 @rotas.post('/duplicar/{rede_id}')
 def duplicar_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
@@ -44,14 +57,16 @@ def duplicar_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
     mapa_nos = {}
 
     for no in nos_originais:
+        metrica, dono, prazo = filtrar_metadados_camada(no.camada, no.metrica, no.dono, no.prazo)
         novo_no = No(
             nome=no.nome,
             rede_id=nova_rede.id,
             camada=no.camada,
-            descricao=no.descricao,
-            status=no.status,
-            anotacoes=no.anotacoes,
-            especificidades_camada=no.especificidades_camada
+            descricao=no.descricao or "",
+            status=no.status or "",
+            metrica=metrica,
+            dono=dono,
+            prazo=prazo
         )
         session.add(novo_no)
         session.commit()
@@ -69,6 +84,7 @@ def duplicar_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
     session.commit()
     return {"mensagem": "Rede duplicada com sucesso", "id": nova_rede.id}
 
+
 @rotas.get('/exportar/{rede_id}')
 def exportar_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
     rede = session.query(Rede).filter(Rede.id == rede_id).first()
@@ -81,15 +97,20 @@ def exportar_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
 
     for no in nos:
         ids_nos.append(no.id)
-        lista_nos.append({
+        item = {
             "id": no.id,
             "nome": no.nome,
             "camada": no.camada,
             "descricao": no.descricao or "",
-            "status": no.status or "",
-            "anotacoes": no.anotacoes or "",
-            "especificidades_camada": no.especificidades_camada or ""
-        })
+            "status": no.status or ""
+        }
+        if no.camada == "beneficio":
+            item["metrica"] = no.metrica or ""
+            item["dono"] = no.dono or ""
+        elif no.camada in CAMADAS_MUDANCA:
+            item["dono"] = no.dono or ""
+            item["prazo"] = no.prazo or ""
+        lista_nos.append(item)
 
     lista_ligacoes = []
     for lig in session.query(Ligacao).all():
@@ -105,6 +126,7 @@ def exportar_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
         "ligacoes": lista_ligacoes
     }
 
+
 @rotas.post('/importar')
 def importar_rede(dados: ImportarRedeSchema, session: Session = Depends(pegar_sessao)):
     nova_rede = Rede(nome=dados.nome)
@@ -113,14 +135,22 @@ def importar_rede(dados: ImportarRedeSchema, session: Session = Depends(pegar_se
 
     mapa_nos = {}
     for item_no in dados.nos:
+        camada = item_no.get("camada", "ti")
+        metrica, dono, prazo = filtrar_metadados_camada(
+            camada,
+            item_no.get("metrica", ""),
+            item_no.get("dono", ""),
+            item_no.get("prazo", "")
+        )
         novo_no = No(
             nome=item_no.get("nome", "Nó"),
             rede_id=nova_rede.id,
-            camada=item_no.get("camada", "ti"),
+            camada=camada,
             descricao=item_no.get("descricao", ""),
             status=item_no.get("status", ""),
-            anotacoes=item_no.get("anotacoes", ""),
-            especificidades_camada=item_no.get("especificidades_camada", "")
+            metrica=metrica,
+            dono=dono,
+            prazo=prazo
         )
         session.add(novo_no)
         session.commit()
@@ -139,6 +169,7 @@ def importar_rede(dados: ImportarRedeSchema, session: Session = Depends(pegar_se
     session.commit()
     return {"mensagem": "Rede importada com sucesso", "id": nova_rede.id}
 
+
 @rotas.delete('/excluir/{rede_id}')
 def excluir_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
     rede = session.query(Rede).filter(Rede.id == rede_id).first()
@@ -146,9 +177,7 @@ def excluir_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
         raise HTTPException(status_code=404, detail="Rede não encontrada")
 
     nos = session.query(No).filter(No.rede_id == rede_id).all()
-    ids_nos = []
-    for no in nos:
-        ids_nos.append(no.id)
+    ids_nos = [no.id for no in nos]
 
     for lig in session.query(Ligacao).all():
         if lig.no_origem_id in ids_nos or lig.no_destino_id in ids_nos:
@@ -161,20 +190,26 @@ def excluir_rede(rede_id: int, session: Session = Depends(pegar_sessao)):
     session.commit()
     return {"mensagem": "Rede excluída com sucesso"}
 
+
 @rotas.post('/Criar_no')
 def criar_no(dados: NoSchema, session: Session = Depends(pegar_sessao)):
+    metrica, dono, prazo = filtrar_metadados_camada(
+        dados.camada, dados.metrica, dados.dono, dados.prazo
+    )
     novo_no = No(
         nome=dados.nome,
         rede_id=dados.rede_id,
         camada=dados.camada,
         descricao=dados.descricao or "",
         status=dados.status or "",
-        anotacoes=dados.anotacoes or "",
-        especificidades_camada=dados.especificidades_camada or ""
+        metrica=metrica,
+        dono=dono,
+        prazo=prazo
     )
     session.add(novo_no)
     session.commit()
     return {"mensagem": "Nó criado", "id": novo_no.id}
+
 
 @rotas.put('/atualizar_no/{no_id}')
 def atualizar_no(no_id: int, dados: DetalhesNoSchema, session: Session = Depends(pegar_sessao)):
@@ -184,12 +219,14 @@ def atualizar_no(no_id: int, dados: DetalhesNoSchema, session: Session = Depends
 
     if dados.nome:
         no.nome = dados.nome
-    no.descricao = dados.descricao
-    no.status = dados.status
-    no.anotacoes = dados.anotacoes
-    no.especificidades_camada = dados.especificidades_camada
+    no.descricao = dados.descricao or ""
+    no.status = dados.status or ""
+    no.metrica, no.dono, no.prazo = filtrar_metadados_camada(
+        no.camada, dados.metrica, dados.dono, dados.prazo
+    )
     session.commit()
     return {"mensagem": "Detalhes atualizados"}
+
 
 @rotas.post('/Criar_ligacao')
 def criar_ligacao(dados: LigacaoSchema, session: Session = Depends(pegar_sessao)):
@@ -218,6 +255,7 @@ def criar_ligacao(dados: LigacaoSchema, session: Session = Depends(pegar_sessao)
 
     return {"mensagem": "Ligação criada"}
 
+
 @rotas.delete('/excluir_no/{no_id}')
 def excluir_no(no_id: int, session: Session = Depends(pegar_sessao)):
     no = session.query(No).filter(No.id == no_id).first()
@@ -231,6 +269,7 @@ def excluir_no(no_id: int, session: Session = Depends(pegar_sessao)):
     session.delete(no)
     session.commit()
     return {"mensagem": "Nó excluído"}
+
 
 @rotas.delete('/excluir_ligacao/{ligacao_id}')
 def excluir_ligacao(ligacao_id: int, session: Session = Depends(pegar_sessao)):
